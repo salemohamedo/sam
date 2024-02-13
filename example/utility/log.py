@@ -27,29 +27,32 @@ class Log:
 
     def __call__(self, model, loss, accuracy, learning_rate: float = None) -> None:
         if self.is_train:
-            self._train_step(model, loss, accuracy, learning_rate)
+            return self._train_step(model, loss, accuracy, learning_rate)
         else:
-            self._eval_step(loss, accuracy)
+            return self._eval_step(loss, accuracy)
 
-    def flush(self) -> None:
+    def flush(self, print_stats=True) -> None:
         if self.is_train:
             loss = self.epoch_state["loss"] / self.epoch_state["steps"]
             accuracy = self.epoch_state["accuracy"] / self.epoch_state["steps"]
 
-            print(
-                f"\r┃{self.epoch:12d}  ┃{loss:12.4f}  │{100*accuracy:10.2f} %  ┃{self.learning_rate:12.3e}  │{self._time():>12}  ┃",
-                end="",
-                flush=True,
-            )
+            if print_stats:
+                print(
+                    f"\r┃{self.epoch:12d}  ┃{loss:12.4f}  │{100*accuracy:10.2f} %  ┃{self.learning_rate:12.3e}  │{self._time():>12}  ┃",
+                    end="",
+                    flush=True,
+                )
 
         else:
             loss = self.epoch_state["loss"] / self.epoch_state["steps"]
             accuracy = self.epoch_state["accuracy"] / self.epoch_state["steps"]
 
-            print(f"{loss:12.4f}  │{100*accuracy:10.2f} %  ┃", flush=True)
+            if print_stats:
+                print(f"{loss:12.4f}  │{100*accuracy:10.2f} %  ┃", flush=True)
 
             if accuracy > self.best_accuracy:
                 self.best_accuracy = accuracy
+        return loss, accuracy
 
     def _train_step(self, model, loss, accuracy, learning_rate: float) -> None:
         self.learning_rate = learning_rate
@@ -73,6 +76,7 @@ class Log:
                 end="",
                 flush=True,
             )
+            return loss, accuracy
 
     def _eval_step(self, loss, accuracy) -> None:
         self.epoch_state["loss"] += loss.sum().item()
